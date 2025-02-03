@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteio de Times</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinhar no topo */
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-align: center;
+            width: 100%;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto; /* Centralizar o container */
+        }
+
+        #playerInput {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #playersList {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 200px; /* Limitar altura da lista */
+            overflow-y: auto; /* Adicionar scroll se necessário */
+        }
+
+        .player-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-item button {
+            background-color: #ff4d4d;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 30%;
+            font-size: 0.9em;
+        }
+
+        .player-item button:hover {
+            background-color: #cc0000;
+        }
+
+        #teams {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .team {
+            background-color: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .team strong {
+            color: #333;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sorteio de Times</h1>
+    <div class="container">
+        <input type="text" id="playerInput" placeholder="Digite o nome do jogador">
+        <button onclick="adicionarJogador()">Adicionar Jogador</button>
+
+        <div id="playersList"></div>
+        <button onclick="sortearTimes()">Sortear Times</button>
+
+        <div id="teams"></div>
+    </div>
+
+    <script>
+        let players = [];
+
+        function adicionarJogador() {
+            const playerInput = document.getElementById('playerInput');
+            const playerName = playerInput.value.trim();
+
+            if (playerName) {
+                players.push(playerName);
+                atualizarListaJogadores();
+                playerInput.value = ''; // Limpa o campo de input
+            }
+        }
+
+        function atualizarListaJogadores() {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = ''; // Limpa a lista atual
+
+            players.forEach((player, index) => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                playerItem.innerHTML = `
+                    <span>${index + 1}. ${player}</span>
+                    <button onclick="removerJogador(${index})">Remover</button>
+                `;
+                playersList.appendChild(playerItem);
+            });
+        }
+
+        function removerJogador(index) {
+            players.splice(index, 1); // Remove o jogador da lista
+            atualizarListaJogadores(); // Atualiza a lista exibida
+        }
+
+        function sortearTimes() {
+            if (players.length === 0) {
+                alert("Adicione pelo menos um jogador!");
+                return;
+            }
+
+            // Jogadores especiais que não podem ficar no mesmo time
+            const specialPlayers = ['Henrique', 'Rafael', 'Kauan'];
+            const otherPlayers = players.filter(player => !specialPlayers.includes(player));
+
+            // Embaralhar todos os jogadores (incluindo os especiais)
+            const allPlayers = shuffleArray([...otherPlayers, ...specialPlayers.filter(player => players.includes(player))]);
+
+            // Dividir os times
+            const teams = [];
+            let teamIndex = 0;
+
+            // Distribuir os jogadores nos times
+            allPlayers.forEach(player => {
+                if (!teams[teamIndex]) {
+                    teams[teamIndex] = [];
+                }
+
+                // Verificar se o time atual já tem um jogador especial
+                const hasSpecialPlayer = teams[teamIndex].some(p => specialPlayers.includes(p));
+
+                // Se o jogador atual for especial e o time já tiver outro especial, mudar de time
+                if (specialPlayers.includes(player) && hasSpecialPlayer) {
+                    teamIndex = (teamIndex + 1) % Math.ceil(allPlayers.length / 5); // Muda para o próximo time
+                    if (!teams[teamIndex]) {
+                        teams[teamIndex] = [];
+                    }
+                }
+
+                // Adicionar o jogador ao time atual
+                teams[teamIndex].push(player);
+
+                // Passar para o próximo time se o time atual já tiver 5 jogadores
+                if (teams[teamIndex].length >= 5) {
+                    teamIndex = (teamIndex + 1) % Math.ceil(allPlayers.length / 5);
+                }
+            });
+
+            // Exibir os times
+            const teamsDiv = document.getElementById('teams');
+            teamsDiv.innerHTML = '';
+            teams.forEach((team, index) => {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team';
+                teamDiv.innerHTML = `<strong>Time ${index + 1}:</strong> ${team.join(', ')}`;
+                teamsDiv.appendChild(teamDiv);
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
